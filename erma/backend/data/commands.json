@@ -3,5 +3,8 @@
   "wake": ["despertar", "levantate", "activar"],
   "greeting": ["saludar", "hola", "buenas"],
   "phrase": ["frase", "motivame", "disciplina"],
-  "state": ["estado", "como estas", "cómo estás"]
+  "state": ["estado", "como estas"],
+  "note_list": ["ver notas", "mostrar notas", "listar notas", "notas"],
+  "note_add": ["recordame", "anotar", "anota", "guardar nota"],
+  "datetime": ["que hora es", "que dia es", "fecha", "hora"]
 }

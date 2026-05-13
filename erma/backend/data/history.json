@@ -1,0 +1,44 @@
+[
+  {
+    "timestamp": "2026-05-12T22:34:23",
+    "command": "erma dormite",
+    "intent": "sleep",
+    "status": "sleep",
+    "emotion": "cansado",
+    "message": "Bueno Gianni, voy a descansar un rato.",
+    "matched_keywords": [
+      "dormite"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T22:34:36",
+    "command": "erma despertate",
+    "intent": "unknown",
+    "status": "idle",
+    "emotion": "curioso",
+    "message": "No entendi ese comando todavia.",
+    "matched_keywords": []
+  },
+  {
+    "timestamp": "2026-05-12T22:34:40",
+    "command": "despertar",
+    "intent": "wake",
+    "status": "idle",
+    "emotion": "neutral",
+    "message": "Ya estoy despierta y lista.",
+    "matched_keywords": [
+      "despertar"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T22:34:42",
+    "command": "hola",
+    "intent": "greeting",
+    "status": "greeting",
+    "emotion": "alegre",
+    "message": "Hola Gianni, estoy aca.",
+    "matched_keywords": [
+      "hola"
+    ]
+  }
+]

@@ -1,12 +1,21 @@
-import json
-import random
+from datetime import datetime
 
-from app.config import PHRASES_FILE
 from core.response import ErmaResponse
 from core.state import ErmaStateStore
 
 
-class PhrasesHandler:
+DAY_NAMES = [
+    "lunes",
+    "martes",
+    "miercoles",
+    "jueves",
+    "viernes",
+    "sabado",
+    "domingo",
+]
+
+
+class DateTimeHandler:
     def __init__(self, state_store: ErmaStateStore):
         self.state_store = state_store
 
@@ -16,19 +25,15 @@ class PhrasesHandler:
         matched_keywords: list[str],
         text: str = "",
     ) -> ErmaResponse:
-        phrase = self._get_phrase()
+        now = datetime.now()
+        day_name = DAY_NAMES[now.weekday()]
+        message = (
+            f"Hoy es {day_name} {now.day:02d}/{now.month:02d}/{now.year} "
+            f"y son las {now.hour:02d}:{now.minute:02d}."
+        )
         state = self.state_store.update_state(
             status="talking",
-            emotion="alegre",
-            message=phrase,
+            emotion="neutral",
+            message=message,
         )
         return ErmaResponse(intent=intent, matched_keywords=matched_keywords, **state)
-
-    def _get_phrase(self) -> str:
-        with open(PHRASES_FILE, "r", encoding="utf-8") as file:
-            phrases = json.load(file)
-
-        if not phrases:
-            return "No tengo frases cargadas todavia."
-
-        return random.choice(phrases)

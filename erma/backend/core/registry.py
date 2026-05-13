@@ -4,7 +4,12 @@ from core.response import ErmaResponse
 
 
 class CommandHandler(Protocol):
-    def handle(self, intent: str, matched_keywords: list[str]) -> ErmaResponse:
+    def handle(
+        self,
+        intent: str,
+        matched_keywords: list[str],
+        text: str = "",
+    ) -> ErmaResponse:
         pass
 
 

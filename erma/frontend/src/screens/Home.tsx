@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import ErmaAvatar from "../components/ErmaAvatar";
 import StatusPanel from "../components/StatusPanel";
-import { getState, sendCommand, sleepErma, wakeErma } from "../services/api";
-import type { ErmaResponse, ErmaState } from "../types/erma";
+import { getHistory, getNotes, getState, sendCommand, sleepErma, wakeErma } from "../services/api";
+import type { ErmaHistoryEntry, ErmaNote, ErmaResponse, ErmaState } from "../types/erma";
 
 const initialState: ErmaState = {
   status: "idle",
@@ -14,14 +14,26 @@ export default function Home() {
   const [state, setState] = useState<ErmaState>(initialState);
   const [command, setCommand] = useState("");
   const [lastResponse, setLastResponse] = useState<ErmaResponse | null>(null);
+  const [history, setHistory] = useState<ErmaHistoryEntry[]>([]);
+  const [notes, setNotes] = useState<ErmaNote[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    getState()
-      .then(setState)
+    Promise.all([getState(), getHistory(), getNotes()])
+      .then(([currentState, currentHistory, currentNotes]) => {
+        setState(currentState);
+        setHistory(currentHistory);
+        setNotes(currentNotes);
+      })
       .catch(() => setError("No pude conectar con el backend de ERMA."));
   }, []);
+
+  async function refreshActivity() {
+    const [currentHistory, currentNotes] = await Promise.all([getHistory(), getNotes()]);
+    setHistory(currentHistory);
+    setNotes(currentNotes);
+  }
 
   async function runAction(action: () => Promise<ErmaResponse>) {
     setLoading(true);
@@ -35,6 +47,7 @@ export default function Home() {
         message: response.message,
       });
       setLastResponse(response);
+      await refreshActivity();
     } catch (apiError) {
       setError(apiError instanceof Error ? apiError.message : "Error inesperado.");
     } finally {
@@ -107,6 +120,12 @@ export default function Home() {
               <button className="min-h-14 rounded-md border border-cyan-300/30 bg-cyan-300/10 font-semibold" onClick={() => runAction(() => sendCommand("motivame"))}>
                 Frase
               </button>
+              <button className="min-h-14 rounded-md border border-cyan-300/30 bg-cyan-300/10 font-semibold" onClick={() => runAction(() => sendCommand("que hora es"))}>
+                Hora
+              </button>
+              <button className="min-h-14 rounded-md border border-cyan-300/30 bg-cyan-300/10 font-semibold" onClick={() => runAction(() => sendCommand("ver notas"))}>
+                Notas
+              </button>
             </section>
 
             <section className="min-h-28 rounded-lg border border-cyan-300/20 bg-white/5 p-4">
@@ -121,6 +140,42 @@ export default function Home() {
               ) : (
                 <p className="mt-3 text-cyan-100/70">ERMA esta esperando un comando.</p>
               )}
+            </section>
+
+            <section className="grid gap-5 lg:grid-cols-2">
+              <div className="min-h-40 rounded-lg border border-cyan-300/20 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/70">Historial</p>
+                {history.length ? (
+                  <div className="mt-3 grid gap-3">
+                    {history
+                      .slice()
+                      .reverse()
+                      .map((entry) => (
+                        <article key={`${entry.timestamp}-${entry.command}`} className="rounded-md border border-cyan-300/10 bg-[#061217] p-3">
+                          <p className="text-sm font-semibold text-cyan-100">{entry.command}</p>
+                          <p className="mt-1 text-sm text-cyan-100/75">{entry.message}</p>
+                        </article>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-cyan-100/70">Todavia no hay comandos guardados.</p>
+                )}
+              </div>
+
+              <div className="min-h-40 rounded-lg border border-cyan-300/20 bg-white/5 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-cyan-200/70">Notas</p>
+                {notes.length ? (
+                  <div className="mt-3 grid gap-2">
+                    {notes.slice(-5).map((note) => (
+                      <article key={note.id} className="rounded-md border border-cyan-300/10 bg-[#061217] p-3">
+                        <p className="text-sm text-cyan-50">{note.text}</p>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-cyan-100/70">Sin notas por ahora.</p>
+                )}
+              </div>
             </section>
           </div>
         </section>

@@ -6,7 +6,12 @@ class SystemHandler:
     def __init__(self, state_store: ErmaStateStore):
         self.state_store = state_store
 
-    def handle(self, intent: str, matched_keywords: list[str]) -> ErmaResponse:
+    def handle(
+        self,
+        intent: str,
+        matched_keywords: list[str],
+        text: str = "",
+    ) -> ErmaResponse:
         if intent == "greeting":
             state = self.state_store.update_state(
                 status="greeting",

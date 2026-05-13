@@ -1,6 +1,6 @@
-import type { ErmaResponse, ErmaState } from "../types/erma";
+import type { ErmaHistoryEntry, ErmaNote, ErmaResponse, ErmaState } from "../types/erma";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
 
 async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -24,6 +24,16 @@ export async function sendCommand(text: string): Promise<ErmaResponse> {
     body: JSON.stringify({ text }),
   });
   return parseResponse<ErmaResponse>(response);
+}
+
+export async function getHistory(): Promise<ErmaHistoryEntry[]> {
+  const response = await fetch(`${API_URL}/history?limit=8`);
+  return parseResponse<ErmaHistoryEntry[]>(response);
+}
+
+export async function getNotes(): Promise<ErmaNote[]> {
+  const response = await fetch(`${API_URL}/notes`);
+  return parseResponse<ErmaNote[]>(response);
 }
 
 export async function wakeErma(): Promise<ErmaResponse> {
