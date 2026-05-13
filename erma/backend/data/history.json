@@ -51,5 +51,117 @@
     "matched_keywords": [
       "dormite"
     ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:03",
+    "command": "despertar",
+    "intent": "wake",
+    "status": "idle",
+    "emotion": "neutral",
+    "message": "Ya estoy despierta y lista.",
+    "matched_keywords": [
+      "despertar"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:05",
+    "command": "hola",
+    "intent": "greeting",
+    "status": "greeting",
+    "emotion": "alegre",
+    "message": "Hola Gianni, estoy aca.",
+    "matched_keywords": [
+      "hola"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:08",
+    "command": "motivame",
+    "intent": "phrase",
+    "status": "talking",
+    "emotion": "alegre",
+    "message": "La disciplina gana cuando la motivacion descansa.",
+    "matched_keywords": [
+      "motivame"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:09",
+    "command": "ver notas",
+    "intent": "note_list",
+    "status": "talking",
+    "emotion": "neutral",
+    "message": "No tengo notas guardadas todavia.",
+    "matched_keywords": [
+      "ver notas",
+      "notas"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:10",
+    "command": "que hora es",
+    "intent": "datetime",
+    "status": "talking",
+    "emotion": "neutral",
+    "message": "Hoy es martes 12/05/2026 y son las 23:09.",
+    "matched_keywords": [
+      "que hora es",
+      "hora"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:11",
+    "command": "dormir",
+    "intent": "sleep",
+    "status": "sleep",
+    "emotion": "cansado",
+    "message": "Bueno Gianni, voy a descansar un rato.",
+    "matched_keywords": [
+      "dormir"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:12",
+    "command": "despertar",
+    "intent": "wake",
+    "status": "idle",
+    "emotion": "neutral",
+    "message": "Ya estoy despierta y lista.",
+    "matched_keywords": [
+      "despertar"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:16",
+    "command": "hola",
+    "intent": "greeting",
+    "status": "greeting",
+    "emotion": "alegre",
+    "message": "Hola Gianni, estoy aca.",
+    "matched_keywords": [
+      "hola"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:18",
+    "command": "motivame",
+    "intent": "phrase",
+    "status": "talking",
+    "emotion": "alegre",
+    "message": "Constancia, foco y calma. Seguimos construyendo.",
+    "matched_keywords": [
+      "motivame"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:09:19",
+    "command": "motivame",
+    "intent": "phrase",
+    "status": "talking",
+    "emotion": "alegre",
+    "message": "La disciplina gana cuando la motivacion descansa.",
+    "matched_keywords": [
+      "motivame"
+    ]
   }
 ]
