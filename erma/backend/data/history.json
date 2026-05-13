@@ -40,5 +40,16 @@
     "matched_keywords": [
       "hola"
     ]
+  },
+  {
+    "timestamp": "2026-05-12T22:55:11",
+    "command": "dormite",
+    "intent": "sleep",
+    "status": "sleep",
+    "emotion": "cansado",
+    "message": "Bueno Gianni, voy a descansar un rato.",
+    "matched_keywords": [
+      "dormite"
+    ]
   }
 ]
