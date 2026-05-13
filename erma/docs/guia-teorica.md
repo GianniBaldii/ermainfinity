@@ -1,31 +1,110 @@
 # Guia teorica de INFINITY ERMA
 
-Esta guia explica como funciona el proyecto desde cero. La idea no es memorizar
-todos los archivos, sino entender el mapa general: que parte recibe comandos,
-que parte decide que significan, que parte cambia el estado y que parte lo muestra
-en pantalla.
+Esta guia explica como funciona el proyecto en su estado actual de MVP textual.
+La idea es que puedas mirar una carpeta o un archivo y entender para que existe,
+como se conecta con el resto y que parte tendrias que tocar para cambiar algo.
 
-## La idea del proyecto
+## Vision general
 
-INFINITY ERMA esta pensada como una base para un asistente personal local. En esta
-primera version no hay voz, inteligencia artificial conversacional ni sensores.
-Por ahora ERMA funciona asi:
+INFINITY ERMA es una base para un asistente personal local. En esta etapa no
+usa voz, sensores ni IA conversacional. El MVP funciona con comandos escritos,
+estado interno, historial, notas, frases y fecha/hora.
 
-1. Una interfaz web muestra el estado de ERMA.
+El flujo general es:
+
+1. El usuario abre la interfaz web.
 2. El usuario escribe un comando o toca un boton.
-3. El frontend manda ese comando al backend.
-4. El backend interpreta el texto usando palabras clave.
-5. El backend actualiza el estado guardado en JSON.
-6. El frontend recibe una respuesta y actualiza la pantalla.
+3. El frontend manda el comando al backend por HTTP.
+4. El backend detecta la intencion del texto.
+5. El backend elige un modulo capaz de responder.
+6. El modulo actualiza estado, notas o historial segun corresponda.
+7. El backend devuelve una respuesta estandar.
+8. El frontend actualiza la pantalla.
 
-La separacion mas importante es esta:
+La separacion principal es:
 
-- `backend`: cerebro simple de ERMA.
-- `frontend`: cara/pantalla de ERMA.
-- `data`: memoria inicial guardada en archivos JSON.
-- `docs`: explicaciones y plan del proyecto.
+```text
+frontend = pantalla y experiencia visual
+backend = logica de ERMA
+core = piezas centrales reutilizables del backend
+modules = comportamientos concretos de ERMA
+data = memoria simple en JSON
+scripts = comandos para levantar o apagar el proyecto
+docs = explicaciones y plan del proyecto
+```
 
-## Backend: el cerebro
+## Estructura del proyecto
+
+```text
+erma/
+|-- backend/
+|   |-- api/
+|   |-- app/
+|   |-- core/
+|   |-- data/
+|   |-- modules/
+|   |-- tests/
+|   `-- requirements.txt
+|-- frontend/
+|   |-- src/
+|   `-- package.json
+`-- docs/
+
+scripts/
+|-- dev.cmd
+|-- dev.ps1
+|-- dev.sh
+|-- stop.cmd
+|-- stop.ps1
+`-- stop.sh
+```
+
+## Como se levanta ERMA
+
+En Windows se usa:
+
+```powershell
+.\scripts\dev.cmd
+```
+
+Si hay procesos viejos ocupando puertos:
+
+```powershell
+.\scripts\dev.cmd -StopExisting
+```
+
+En Raspberry/Linux se usa:
+
+```bash
+./scripts/dev.sh
+```
+
+Si es la primera vez:
+
+```bash
+./scripts/dev.sh --install
+```
+
+El frontend queda en:
+
+```text
+http://127.0.0.1:5173
+```
+
+El backend queda en:
+
+```text
+http://127.0.0.1:8000
+```
+
+En la Raspberry, el script escucha en `0.0.0.0`, asi que tambien se puede abrir
+desde otra maquina de la misma red:
+
+```text
+http://IP_DE_LA_RASPBERRY:5173
+```
+
+## Backend
 
 El backend vive en:
 
@@ -33,144 +112,73 @@ El backend vive en:
 erma/backend
 ```
 
-Usa FastAPI, que sirve para crear una API HTTP. Una API HTTP es una forma de que
-otros programas hablen con el backend usando URLs como `/state`, `/command`,
-`/wake` o `/sleep`.
-
-### Que es un endpoint
-
-Un endpoint es una puerta de entrada al backend. Por ejemplo:
-
-```text
-GET /state
-```
-
-significa: "dame el estado actual".
-
-```text
-POST /command
-```
-
-significa: "te mando un comando escrito para que lo proceses".
-
-Los endpoints estan definidos en:
-
-```text
-erma/backend/api/routes.py
-```
-
-## Archivo principal del backend
-
-El archivo:
-
-```text
-erma/backend/app/main.py
-```
-
-crea la aplicacion FastAPI.
-
-Tambien configura CORS. CORS es el permiso para que el frontend, que corre en
-`http://127.0.0.1:5173`, pueda hablar con el backend, que corre en
-`http://127.0.0.1:8000`.
-
-Sin CORS, el navegador podria bloquear la comunicacion entre frontend y backend.
-
-## Estado de ERMA
-
-El estado actual se guarda en:
-
-```text
-erma/backend/data/state.json
-```
-
-Ese archivo contiene algo parecido a esto:
-
-```json
-{
-  "status": "idle",
-  "emotion": "neutral",
-  "message": "ERMA esta activa"
-}
-```
-
-El codigo que lee y escribe ese estado esta en:
-
-```text
-erma/backend/core/state.py
-```
-
-Conceptualmente, ese archivo es la memoria simple de ERMA. Todavia no usa base de
-datos; usa JSON para que sea facil de entender y modificar.
-
-## Intents: que quiso decir el usuario
-
-Un `intent` es la intencion detectada en un comando.
+Usa FastAPI. FastAPI permite crear endpoints HTTP, que son URLs a las que el
+frontend puede llamar.
 
 Ejemplos:
 
-- Si escribis `ERMA dormite un rato`, el intent esperado es `sleep`.
-- Si escribis `hola ERMA`, el intent esperado es `greeting`.
-- Si escribis `motivame`, el intent esperado es `phrase`.
-- Si escribis `como estas`, el intent esperado es `state`.
+```text
+GET /state
+POST /command
+GET /history
+GET /notes
+POST /wake
+POST /sleep
+```
 
-Los intents y sus palabras clave estan en:
+## App: arranque y configuracion
+
+La carpeta:
 
 ```text
-erma/backend/data/commands.json
+erma/backend/app
 ```
 
-Ejemplo simplificado:
+contiene piezas de arranque.
 
-```json
-{
-  "sleep": ["dormir", "dormite", "descansar"],
-  "wake": ["despertar", "levantate", "activar"],
-  "greeting": ["saludar", "hola", "buenas"]
-}
-```
+### `app/main.py`
 
-El codigo que busca esas palabras clave esta en:
+Crea la aplicacion FastAPI:
 
 ```text
-erma/backend/core/intent_matcher.py
+app = FastAPI(...)
 ```
 
-Ese archivo normaliza el texto. Por ejemplo, convierte a minusculas y quita
-acentos para comparar mejor. Asi `como estas` y `como estas` pueden tratarse de
-forma parecida aunque el usuario escriba con variantes.
+Tambien configura CORS. CORS permite que el frontend, que corre en el puerto
+`5173`, pueda hablar con el backend, que corre en el puerto `8000`.
 
-## Router de comandos
+Sin CORS, el navegador podria bloquear los pedidos del frontend.
 
-El archivo:
+### `app/config.py`
+
+Define rutas importantes:
 
 ```text
-erma/backend/core/command_router.py
+STATE_FILE
+COMMANDS_FILE
+PHRASES_FILE
+HISTORY_FILE
+NOTES_FILE
 ```
 
-recibe el texto, pregunta que intent se encontro y despues manda el trabajo al
-modulo correcto.
+Es decir, le dice al backend donde estan los JSON que ERMA usa como memoria.
 
-Pensalo como una recepcion:
+### `app/bootstrap.py`
 
-1. Llega un texto.
-2. Se detecta el intent.
-3. Se busca quien sabe manejar ese intent.
-4. Se ejecuta ese handler.
-5. Se devuelve una respuesta.
+Arma las piezas principales:
 
-Si no se encuentra ningun intent, ERMA responde con `unknown`.
+- crea stores;
+- crea el registry;
+- registra intents con handlers;
+- conecta modulos concretos con el core.
 
-## Registry: la lista de modulos disponibles
-
-El archivo:
+Este archivo responde a la pregunta:
 
 ```text
-erma/backend/core/registry.py
+Que capacidades tiene ERMA cargadas al iniciar?
 ```
 
-guarda una relacion entre intents y handlers.
-
-Por ejemplo:
+Ejemplo conceptual:
 
 ```text
 sleep -> SleepHandler
@@ -178,68 +186,311 @@ wake -> SleepHandler
 greeting -> SystemHandler
 state -> SystemHandler
 phrase -> PhrasesHandler
+note_add -> NotesHandler
+note_list -> NotesHandler
+datetime -> DateTimeHandler
 ```
 
-Esa relacion se arma en:
+## API: puertas de entrada
+
+La carpeta:
 
 ```text
-erma/backend/app/bootstrap.py
+erma/backend/api
 ```
 
-El `bootstrap` es el lugar donde se conectan las piezas principales del backend.
+contiene las rutas HTTP.
 
-## Handlers: los modulos que hacen cosas
+El archivo principal es:
 
-Los handlers viven en:
+```text
+erma/backend/api/routes.py
+```
+
+Ese archivo define que pasa cuando alguien llama a:
+
+```text
+GET /state
+GET /history
+GET /notes
+POST /command
+POST /wake
+POST /sleep
+```
+
+`POST /command` es el endpoint mas importante. Recibe texto, por ejemplo:
+
+```json
+{
+  "text": "recordame comprar pilas"
+}
+```
+
+y se lo pasa al router de comandos.
+
+## Core: el corazon de ERMA
+
+La carpeta:
+
+```text
+erma/backend/core
+```
+
+contiene la logica central que no pertenece a un modulo especifico. El `core` no
+es "dormir", "notas" o "frases". El `core` es la infraestructura interna que hace
+que cualquier modulo pueda existir.
+
+Pensalo asi:
+
+```text
+core = motor
+modules = habilidades
+data = memoria
+api = entradas/salidas por HTTP
+```
+
+### `core/intent_matcher.py`
+
+Detecta la intencion del usuario.
+
+Lee:
+
+```text
+erma/backend/data/commands.json
+```
+
+Ese JSON tiene una relacion entre intents y palabras clave:
+
+```json
+{
+  "sleep": ["dormir", "dormite", "descansar"],
+  "note_add": ["recordame", "anotar", "anota", "guardar nota"],
+  "datetime": ["que hora es", "que dia es", "fecha", "hora"]
+}
+```
+
+Si el usuario escribe:
+
+```text
+ERMA recordame comprar pilas
+```
+
+el matcher encuentra `recordame` y devuelve:
+
+```text
+intent = note_add
+matched_keywords = ["recordame"]
+```
+
+Antes de comparar, normaliza texto:
+
+- pasa a minusculas;
+- quita espacios extra;
+- quita acentos.
+
+Por eso `que día es` puede coincidir con `que dia es`.
+
+### `core/command_router.py`
+
+Recibe el texto original y coordina el procesamiento.
+
+Su trabajo es:
+
+1. pedir al `IntentMatcher` que detecte el intent;
+2. si no hay intent, crear una respuesta `unknown`;
+3. si hay intent, pedir al `CommandRegistry` el handler correcto;
+4. ejecutar el handler;
+5. guardar el resultado en el historial;
+6. devolver la respuesta.
+
+Es una pieza central porque une deteccion, ejecucion e historial.
+
+### `core/registry.py`
+
+Guarda la relacion entre intents y handlers.
+
+Un handler es una clase que sabe responder a una intencion. Por ejemplo:
+
+```text
+sleep -> SleepHandler
+note_add -> NotesHandler
+datetime -> DateTimeHandler
+```
+
+Si llega el intent `note_add`, el registry entrega el `NotesHandler`.
+
+Si llega un intent que no fue registrado, lanza error. Esto ayuda a detectar
+configuraciones incompletas.
+
+### `core/response.py`
+
+Define la respuesta estandar de ERMA.
+
+Todas las respuestas importantes tienen esta forma:
+
+```json
+{
+  "intent": "note_add",
+  "status": "talking",
+  "emotion": "alegre",
+  "message": "Listo, guarde la nota 1: comprar pilas",
+  "matched_keywords": ["recordame"]
+}
+```
+
+Esto es clave porque el frontend siempre sabe que campos esperar.
+
+### `core/state.py`
+
+Lee y escribe el estado actual de ERMA.
+
+Archivo de datos:
+
+```text
+erma/backend/data/state.json
+```
+
+Ejemplo:
+
+```json
+{
+  "status": "sleep",
+  "emotion": "cansado",
+  "message": "Bueno Gianni, voy a descansar un rato."
+}
+```
+
+El estado representa como esta ERMA ahora mismo. No es historial. Es la foto
+actual.
+
+Estados permitidos:
+
+```text
+idle
+listening
+thinking
+talking
+sleep
+greeting
+```
+
+Emociones permitidas:
+
+```text
+neutral
+alegre
+cansado
+curioso
+```
+
+### `core/history.py`
+
+Guarda comandos procesados y respuestas.
+
+Archivo de datos:
+
+```text
+erma/backend/data/history.json
+```
+
+Cada entrada guarda:
+
+- fecha/hora;
+- comando original;
+- intent;
+- status;
+- emotion;
+- message;
+- palabras clave detectadas.
+
+El historial sirve para mostrar actividad reciente en el frontend y para tener
+una memoria basica de lo que se le pidio a ERMA.
+
+### `core/notes.py`
+
+Guarda y lista notas.
+
+Archivo de datos:
+
+```text
+erma/backend/data/notes.json
+```
+
+Cada nota tiene:
+
+- `id`;
+- `text`;
+- `created_at`.
+
+Este core no decide cuando crear una nota. Solo ofrece operaciones simples:
+
+```text
+list_notes()
+add_note(text)
+```
+
+La decision de "este comando significa crear nota" pertenece al `NotesHandler`.
+
+## Modules: habilidades de ERMA
+
+La carpeta:
 
 ```text
 erma/backend/modules
 ```
 
-Cada modulo sabe resolver una responsabilidad concreta.
+contiene comportamientos concretos. Cada modulo responde a uno o mas intents.
 
-### SleepHandler
+### Sleep
 
-Archivo:
+Archivos:
 
 ```text
 erma/backend/modules/sleep/handler.py
+erma/backend/modules/sleep/commands.py
 ```
 
-Maneja:
+Intents:
 
-- `sleep`
-- `wake`
+```text
+sleep
+wake
+```
 
-Si el intent es `sleep`, cambia el estado a dormida. Si el intent es `wake`,
-cambia el estado a despierta.
+Hace que ERMA pase a dormida o despierta.
 
-### SystemHandler
+### System
 
-Archivo:
+Archivos:
 
 ```text
 erma/backend/modules/system/handler.py
+erma/backend/modules/system/commands.py
 ```
 
-Maneja:
+Intents:
 
-- `greeting`
-- `state`
+```text
+greeting
+state
+```
 
-Sirve para saludar o para preguntar como esta ERMA.
+Sirve para saludar y consultar como esta ERMA.
 
-### PhrasesHandler
+### Phrases
 
-Archivo:
+Archivos:
 
 ```text
 erma/backend/modules/phrases/handler.py
+erma/backend/modules/phrases/commands.py
 ```
 
-Maneja:
+Intent:
 
-- `phrase`
+```text
+phrase
+```
 
 Lee frases desde:
 
@@ -247,55 +498,136 @@ Lee frases desde:
 erma/backend/data/phrases.json
 ```
 
-y devuelve una frase al azar.
+y devuelve una al azar.
 
-## Respuesta estandar
+### Notes
 
-Todas las respuestas importantes del backend usan este formato:
-
-```json
-{
-  "intent": "sleep",
-  "status": "sleep",
-  "emotion": "cansado",
-  "message": "Bueno Gianni, voy a descansar un rato.",
-  "matched_keywords": ["dormite"]
-}
-```
-
-Ese formato esta definido en:
+Archivos:
 
 ```text
-erma/backend/core/response.py
+erma/backend/modules/notes/handler.py
+erma/backend/modules/notes/commands.py
 ```
 
-Esto es util porque el frontend siempre sabe que campos esperar.
+Intents:
 
-## Ejemplo completo: "ERMA dormite un rato"
+```text
+note_add
+note_list
+```
+
+Ejemplos:
+
+```text
+recordame comprar pilas
+anotar revisar el MVP
+ver notas
+```
+
+Cuando se agrega una nota, el handler extrae el texto posterior a la palabra
+clave. Por ejemplo:
+
+```text
+ERMA recordame comprar pilas
+```
+
+se convierte en nota:
+
+```text
+comprar pilas
+```
+
+### DateTime
+
+Archivos:
+
+```text
+erma/backend/modules/datetime/handler.py
+erma/backend/modules/datetime/commands.py
+```
+
+Intent:
+
+```text
+datetime
+```
+
+Ejemplos:
+
+```text
+que hora es
+que dia es
+fecha
+hora
+```
+
+Devuelve dia, fecha y hora usando el reloj local donde corre el backend. En la
+Raspberry, eso significa el reloj de la Raspberry.
+
+## Data: memoria simple
+
+La carpeta:
+
+```text
+erma/backend/data
+```
+
+contiene archivos JSON.
+
+### `commands.json`
+
+Configura intents y palabras clave.
+
+Si queres que ERMA entienda otra frase para una accion existente, se suele tocar
+este archivo.
+
+### `state.json`
+
+Guarda el estado actual.
+
+### `phrases.json`
+
+Guarda frases que el modulo de frases puede devolver.
+
+### `history.json`
+
+Guarda historial de comandos procesados.
+
+### `notes.json`
+
+Guarda notas creadas por comandos tipo `recordame`.
+
+## Flujo completo: comando de nota
 
 Supongamos que escribis:
 
 ```text
-ERMA dormite un rato
+ERMA recordame comprar pilas
 ```
 
-El flujo interno es:
+El flujo real es:
 
-1. El frontend manda el texto a `POST /command`.
-2. `api/routes.py` recibe el request.
-3. `CommandRouter` llama a `IntentMatcher`.
-4. `IntentMatcher` lee `commands.json`.
-5. Encuentra la palabra clave `dormite`.
-6. Decide que el intent es `sleep`.
-7. `CommandRouter` pide al `CommandRegistry` el handler para `sleep`.
-8. El registry devuelve `SleepHandler`.
-9. `SleepHandler` actualiza `state.json`.
-10. El backend devuelve una respuesta estandar.
-11. El frontend actualiza avatar, estado, emocion y mensaje.
+1. `Home.tsx` recibe el texto del input.
+2. `api.ts` manda `POST /command` al backend.
+3. `routes.py` recibe el request.
+4. `CommandRouter` recibe el texto.
+5. `IntentMatcher` normaliza el texto.
+6. `IntentMatcher` busca palabras clave en `commands.json`.
+7. Encuentra `recordame`.
+8. Devuelve intent `note_add`.
+9. `CommandRouter` pide al `CommandRegistry` el handler de `note_add`.
+10. El registry devuelve `NotesHandler`.
+11. `NotesHandler` extrae `comprar pilas`.
+12. `NotesHandler` llama a `ErmaNotesStore.add_note(...)`.
+13. `notes.json` se actualiza.
+14. `NotesHandler` actualiza `state.json`.
+15. `CommandRouter` guarda la respuesta en `history.json`.
+16. El backend devuelve una `ErmaResponse`.
+17. El frontend actualiza estado, respuesta, historial y notas.
 
-Ese es el corazon del proyecto.
+Ese flujo muestra como se conectan frontend, API, core, modules y data.
 
-## Frontend: la cara de ERMA
+## Frontend
 
 El frontend vive en:
 
@@ -305,161 +637,253 @@ erma/frontend
 
 Usa:
 
-- React: para construir la interfaz.
-- TypeScript: JavaScript con tipos.
-- Vite: herramienta para correr y compilar el frontend.
-- TailwindCSS: clases de estilos para disenar rapido.
+- React;
+- TypeScript;
+- Vite;
+- TailwindCSS.
 
-El archivo de entrada es:
+### `src/main.tsx`
 
-```text
-erma/frontend/src/main.tsx
-```
+Entrada de React. Monta la pantalla principal.
 
-Ese archivo monta la pantalla principal `Home`.
+### `src/screens/Home.tsx`
 
-## Pantalla principal
+Pantalla principal de ERMA.
 
-La pantalla principal esta en:
+Maneja:
 
-```text
-erma/frontend/src/screens/Home.tsx
-```
-
-Ese archivo maneja:
-
-- estado visual actual de ERMA;
-- texto escrito por el usuario;
-- ultima respuesta recibida;
+- estado actual;
+- comando escrito;
+- ultima respuesta;
 - errores de conexion;
-- botones rapidos como dormir, despertar, saludar y frase.
+- historial reciente;
+- notas recientes;
+- botones rapidos.
 
-Cuando la pantalla carga, llama a `getState()` para pedirle al backend el estado
-actual.
+Cuando carga, pide:
 
-Cuando escribis un comando, llama a `sendCommand(text)`.
+- `GET /state`;
+- `GET /history`;
+- `GET /notes`.
 
-## Servicio API del frontend
+Cuando ejecuta un comando, despues refresca historial y notas.
 
-El archivo:
+### `src/services/api.ts`
 
-```text
-erma/frontend/src/services/api.ts
-```
+Es el puente entre frontend y backend.
 
-es el puente entre React y FastAPI.
+Define:
 
-Ahi estan funciones como:
+- `getState()`;
+- `getHistory()`;
+- `getNotes()`;
+- `sendCommand(text)`;
+- `wakeErma()`;
+- `sleepErma()`.
 
-- `getState()`
-- `sendCommand(text)`
-- `wakeErma()`
-- `sleepErma()`
-
-Todas usan `fetch`, que es la funcion del navegador para hacer pedidos HTTP.
-
-Por ahora la API esta fija en:
-
-```text
-http://127.0.0.1:8000
-```
-
-Mas adelante conviene mover eso a una variable de entorno.
-
-## Tipos del frontend
-
-Los tipos viven en:
+La URL del backend se calcula con el mismo host desde donde se abrio el frontend:
 
 ```text
-erma/frontend/src/types/erma.ts
+http://HOST_ACTUAL:8000
 ```
 
-Ahi se define que formas pueden tener `status`, `emotion`, `ErmaState` y
-`ErmaResponse`.
-
-Esto ayuda a que TypeScript avise si el frontend espera un campo que el backend
-no devuelve, o si se usa un estado invalido.
-
-## Componentes visuales
-
-Los componentes estan en:
+Esto importa en Raspberry. Si abris:
 
 ```text
-erma/frontend/src/components
+http://192.168.1.27:5173
 ```
 
-Actualmente hay:
+el frontend llama automaticamente a:
 
-- `ErmaAvatar.tsx`: muestra la cara/avatar de ERMA segun estado y emocion.
-- `StatusPanel.tsx`: muestra estado, emocion y mensaje.
+```text
+http://192.168.1.27:8000
+```
 
-La idea de React es dividir la pantalla en piezas pequenas. Cada componente se
-ocupa de una parte visual.
+### `src/types/erma.ts`
+
+Define los tipos TypeScript usados por la pantalla:
+
+- `ErmaStatus`;
+- `ErmaEmotion`;
+- `ErmaState`;
+- `ErmaResponse`;
+- `ErmaHistoryEntry`;
+- `ErmaNote`.
+
+## Scripts
+
+Los scripts existen para no tener que levantar backend y frontend a mano.
+
+### Windows
+
+```text
+scripts/dev.cmd
+scripts/dev.ps1
+scripts/stop.cmd
+scripts/stop.ps1
+```
+
+Uso normal:
+
+```powershell
+.\scripts\dev.cmd
+```
+
+Reiniciar limpio:
+
+```powershell
+.\scripts\dev.cmd -StopExisting
+```
+
+Apagar:
+
+```powershell
+.\scripts\stop.cmd
+```
+
+### Raspberry/Linux
+
+```text
+scripts/dev.sh
+scripts/stop.sh
+```
+
+Primera ejecucion:
+
+```bash
+chmod +x scripts/dev.sh scripts/stop.sh
+./scripts/dev.sh --install
+```
+
+Uso normal:
+
+```bash
+./scripts/dev.sh
+```
+
+Reiniciar limpio:
+
+```bash
+./scripts/dev.sh --stop-existing
+```
+
+Apagar:
+
+```bash
+./scripts/stop.sh
+```
+
+## Tests
+
+Los tests del backend viven en:
+
+```text
+erma/backend/tests
+```
+
+Se ejecutan con:
+
+```powershell
+cd erma/backend
+.\.venv\Scripts\python.exe -m pytest
+```
+
+En Linux/Raspberry:
+
+```bash
+cd erma/backend
+.venv/bin/python -m pytest
+```
+
+Los tests actuales validan:
+
+- `GET /state`;
+- comando `sleep`;
+- comando desconocido;
+- agregar nota;
+- comando de fecha/hora.
 
 ## Donde tocar segun lo que quieras cambiar
 
-Si queres agregar una palabra clave nueva:
+Agregar palabras clave:
 
 ```text
 erma/backend/data/commands.json
 ```
 
-Si queres cambiar una respuesta de dormir/despertar:
-
-```text
-erma/backend/modules/sleep/handler.py
-```
-
-Si queres agregar frases motivacionales:
+Cambiar frases:
 
 ```text
 erma/backend/data/phrases.json
 ```
 
-Si queres cambiar como se ve la pantalla:
+Cambiar respuestas de dormir/despertar:
+
+```text
+erma/backend/modules/sleep/handler.py
+```
+
+Cambiar como se guardan notas:
+
+```text
+erma/backend/core/notes.py
+erma/backend/modules/notes/handler.py
+```
+
+Cambiar como se detectan comandos:
+
+```text
+erma/backend/core/intent_matcher.py
+```
+
+Cambiar el flujo general de comandos:
+
+```text
+erma/backend/core/command_router.py
+```
+
+Cambiar la pantalla:
 
 ```text
 erma/frontend/src/screens/Home.tsx
 erma/frontend/src/components
 ```
 
-Si queres cambiar colores y estilos globales:
+Cambiar conexion frontend/backend:
 
 ```text
-erma/frontend/src/index.css
+erma/frontend/src/services/api.ts
 ```
 
-Si queres agregar un modulo nuevo:
+Agregar una habilidad nueva:
 
-1. Crear una carpeta en `erma/backend/modules`.
-2. Crear su `handler.py`.
-3. Agregar palabras clave en `commands.json`.
-4. Registrar el nuevo handler en `app/bootstrap.py`.
-5. Si hace falta, agregar botones o llamadas en el frontend.
+1. Crear carpeta en `erma/backend/modules`.
+2. Crear `handler.py`.
+3. Crear `commands.py` si queres documentar constantes.
+4. Agregar intent y keywords en `data/commands.json`.
+5. Registrar el handler en `app/bootstrap.py`.
+6. Si hace falta, agregar botones o vistas en el frontend.
+7. Agregar tests.
 
-## Como pensar el proyecto sin perderte
+## Como debuggear
 
-Una forma simple de recordarlo:
+Si un comando no responde como esperabas, revisa en este orden:
 
-```text
-Frontend = pantalla
-Backend = logica
-JSON = memoria/configuracion simple
-Intent = intencion detectada
-Handler = modulo que sabe que hacer
-State = estado actual de ERMA
-```
+1. El frontend manda el texto correcto?
+2. `commands.json` tiene una palabra clave que coincida?
+3. `IntentMatcher` esta encontrando el intent correcto?
+4. El intent esta registrado en `bootstrap.py`?
+5. El handler devuelve una `ErmaResponse` valida?
+6. El estado se actualiza en `state.json`?
+7. El historial se actualiza en `history.json`?
+8. El frontend refresca historial/notas despues del comando?
 
-Cuando algo no funcione, preguntate:
+Si ERMA no levanta:
 
-1. El frontend esta mandando el pedido correcto?
-2. El backend tiene un endpoint para recibirlo?
-3. El intent existe en `commands.json`?
-4. Hay un handler registrado para ese intent?
-5. El handler devuelve una respuesta con el formato correcto?
-6. El frontend sabe mostrar esa respuesta?
-
-Con esas seis preguntas podes debuggear casi todo el proyecto actual.
+1. Revisa si los puertos `8000` o `5173` estan ocupados.
+2. Usa `dev.cmd -StopExisting` en Windows.
+3. Usa `dev.sh --stop-existing` en Raspberry/Linux.
+4. Mira los logs en `.logs/`.
 
 ## Que todavia no existe
 
@@ -470,11 +894,12 @@ Esta version todavia no incluye:
 - parlante;
 - clima real;
 - alarmas;
-- base de datos SQLite;
+- SQLite;
 - WebSockets;
 - IA conversacional;
-- historial de conversaciones.
+- autenticacion;
+- panel de configuracion.
 
-Eso no esta mal. Es intencional. Primero se esta construyendo una base simple,
-entendible y modificable. Despues se puede hacer crecer sin romper todo.
-
+Eso es intencional. El objetivo actual es tener una base simple, entendible y
+modular. Cuando esta base sea comoda, se puede crecer hacia voz, eventos en
+tiempo real, base de datos e IA sin reescribir todo desde cero.
