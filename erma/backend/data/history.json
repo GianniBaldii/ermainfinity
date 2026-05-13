@@ -163,5 +163,27 @@
     "matched_keywords": [
       "motivame"
     ]
+  },
+  {
+    "timestamp": "2026-05-12T23:12:07",
+    "command": "dormir",
+    "intent": "sleep",
+    "status": "sleep",
+    "emotion": "cansado",
+    "message": "Bueno Gianni, voy a descansar un rato.",
+    "matched_keywords": [
+      "dormir"
+    ]
+  },
+  {
+    "timestamp": "2026-05-12T23:12:08",
+    "command": "despertar",
+    "intent": "wake",
+    "status": "idle",
+    "emotion": "neutral",
+    "message": "Ya estoy despierta y lista.",
+    "matched_keywords": [
+      "despertar"
+    ]
   }
 ]

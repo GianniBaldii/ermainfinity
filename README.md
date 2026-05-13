@@ -34,6 +34,12 @@ erma/
 
 ## Backend en Windows
 
+Guia rapida de comandos:
+
+```text
+erma/docs/comandos-arranque.md
+```
+
 Desde la raiz del repo:
 
 ```powershell
