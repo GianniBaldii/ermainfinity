@@ -206,6 +206,12 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+# Node / Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
+
 # PyPI configuration file
 .pypirc
 
